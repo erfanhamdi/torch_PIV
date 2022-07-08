@@ -34,13 +34,13 @@ frame = 2
 
 # Algorithm Params
 # Maximum Fixing Iterations
-i_fix=500
+i_fix = 500
 # R correlation threshold
-r_limit=0.5
+r_limit = 0.5
 # Spatial Scale [m/pixel]
-l_scale=1.0
+l_scale = 1.0
 # Temporal Scale 1/frame_rate [s/frame]
-t_scale=1.0
+t_scale = 1.0
 # Interrodation Windows Sizes (pixel)
 iw_size = 51 
 # Search Windows Sizes (sw > iw) (pixel)
