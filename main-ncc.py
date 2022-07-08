@@ -32,12 +32,8 @@ img_1 = image_transforms(img_1)
 img_2 = Image.open('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/2.jpg')
 img_2 = image_transforms(img_2)
 
-# img_1 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/1.jpg', 0),0)).astype('float32') # Read Grayscale
-# img_2 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/2.jpg', 0),0)).astype('float32')
 # Output Params
 frame = 2
-# img_1 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/a1.jpg', 0),0)).astype('float32') # Read Grayscale
-# img_2 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/a2.jpg', 0),0)).astype('float32') # Read Grayscalei_fix=500     # Number of maximum correction cycles
 
 # Algorithm Params
 # Maximum Fixing Iterations
@@ -49,66 +45,72 @@ l_scale=1.0
 # Temporal Scale 1/frame_rate [s/frame]
 t_scale=1.0
 # Interrodation Windows Sizes (pixel)
-iw=51 
+iw_size = 51 
 # Search Windows Sizes (sw > iw) (pixel)
-sw=81 
+sw_size = 81 
 
-batch, ia, ja = img_1.shape
-# ia, ja = img_1.shape
-iw=int(2*np.floor((iw+1)/2)-1) # Even->Odd
-sw=int(2*np.floor((sw+1)/2)-1)
-margin=int((sw-iw)/2)
-im=int(2*np.floor((ia-1-iw)/(iw-1))) # Number of I.W.s in x direction
-jm=int(2*np.floor((ja-1-iw)/(iw-1))) # Number of I.W.s in y direction
+# batch, ia, ja = img_1.shape
+batch, height, width = img_1.shape
+# Changing the shape of windows from even to odd
+iw_size = int( 2 * np.floor( (iw_size + 1) / 2 ) - 1 )
+sw_size = int( 2 * np.floor( (sw_size + 1) / 2 ) - 1 )
+# Calculating the Margin between iw and sw
+margin = int((sw_size - iw_size) / 2)
+# Number of iw and sw in each direction
+iw_no_y = int(2*np.floor((height-1-iw_size)/(iw_size-1)))
+iw_no_x = int(2*np.floor((width-1-iw_size)/(iw_size-1)))
 
-vecx=np.zeros((im,jm)) # x-Displacement
-vecy=np.zeros((im,jm)) # y-Displacement
-vec=np.zeros((im,jm)) # Magnitude
-rij=np.zeros((im,jm)) # Correlation coeff.
+# Initializing Displacement field
+# Displacement in x and y direction
+vecx = np.zeros((iw_no_y,iw_no_x)) # x-Displacement
+vecy = np.zeros((iw_no_y,iw_no_x)) # y-Displacement
+vec = np.zeros((iw_no_y,iw_no_x)) # Magnitude
+# Initializing the Correlation Matrix
+rij = np.zeros((iw_no_y,iw_no_x)) # Correlation coeff.
 
-for j in tqdm(range(jm)):
-    j_d=int(j*(iw-1)/2) # Bottom bound
-    j_u=j_d+iw          # Top bound
-    sw_d=max(0,j_d-margin) # First Row
-    sw_d_diff=max(0,j_d-margin)-(j_d-margin)
-    sw_u=min(ja-1,j_u+margin) # Last Row
+for iw_x in tqdm(range(iw_no_x)):
+    j_d = int(iw_x*(iw_size-1)/2) # Bottom bound
+    j_u = j_d+iw_size          # Top bound
+    sw_d = max(0,j_d-margin) # First Row
+    sw_d_diff = max(0,j_d-margin)-(j_d-margin)
+    sw_u = min(width-1,j_u+margin) # Last Row
     
-    for i in range(im):
-        i_l=int(i*(iw-1)/2) # Left bound
-        i_r=i_l+iw          # Right bound
-        sw_l=max(0,i_l-margin) # First column
-        sw_l_diff=max(0,i_l-margin)-(i_l-margin)
-        sw_r=min(ia-1,i_r+margin) # Last column
+    for iw_y in range(iw_no_y):
+        i_l = int(iw_y*(iw_size-1)/2) # Left bound
+        i_r = i_l+iw_size          # Right bound
+        sw_l = max(0,i_l-margin) # First column
+        sw_l_diff = max(0,i_l-margin)-(i_l-margin)
+        sw_r = min(height-1,i_r+margin) # Last column
         
-        R=np.zeros((sw-iw+1,sw-iw+1))-1 # Correlation Matrix
+        R=np.zeros((sw_size-iw_size+1,sw_size-iw_size+1))-1 # Correlation Matrix
         # c1=np.array(img_1[i_l:i_l+iw,j_d:j_d+iw]) # IW from 1st image
-        c1=img_1[..., i_l:i_l+iw,j_d:j_d+iw]# IW from 1st image
-        center_pixel_c1_in_image_1=torch.Tensor([i_l+iw//2,j_d+iw//2])
+        c1=img_1[..., i_l:i_l+iw_size,j_d:j_d+iw_size]# IW from 1st image
+        center_pixel_c1_in_image_1=torch.Tensor([i_l+iw_size//2,j_d+iw_size//2])
         R_torch = utils.torch_corr(c1, img_2[..., sw_l:sw_r,sw_d:sw_u])
         # for jj in range(sw_d,sw_u+1-iw):
         #     for ii in range(sw_l,sw_r+1-iw):
         #         c2=np.array(img_2[ii:ii+iw,jj:jj+iw]) # IW from 2nd image
         #         R[ii-sw_l,jj-sw_d]=corr2(c1,c2)
         # rij[i,j]=R.max()
-        rij[i,j]=R_torch.max()
-        if rij[i,j]>=r_limit:
+        rij[iw_y,iw_x] = R_torch.max()
+        if rij[iw_y,iw_x] >= r_limit:
             # dum=np.floor(np.argmax(R)/R.shape[0])
             dum = np.unravel_index(np.argmax(R_torch), R_torch.shape)
             center_of_max_R_in_image_2 = np.array([sw_l+dum[2],sw_d+dum[1]])
-            vecy[i, j] = center_of_max_R_in_image_2[1] - center_pixel_c1_in_image_1[1] + utils.subpix(R_torch[0], 'y', dum)
-            vecx[i, j] = center_of_max_R_in_image_2[0] - center_pixel_c1_in_image_1[0] + utils.subpix(R_torch[0], 'x', dum)
+            vecy[iw_y, iw_x] = center_of_max_R_in_image_2[1] - center_pixel_c1_in_image_1[1] + utils.subpix(R_torch[0], 'y', dum)
+            vecx[iw_y, iw_x] = center_of_max_R_in_image_2[0] - center_pixel_c1_in_image_1[0] + utils.subpix(R_torch[0], 'x', dum)
             # vecy[i,j]=dum-(margin-sw_l_diff)+subpix(R,'y')
 
             # vecx[i,j]=np.argmax(R)-dum*R.shape[0]-(margin-sw_d_diff)+subpix(R,'x')
-            vec[i,j]=np.sqrt(vecx[i,j]*vecx[i,j]+vecy[i,j]*vecy[i,j])
+            vec[iw_y, iw_x]=np.sqrt(vecx[iw_y, iw_x]*vecx[iw_y, iw_x]+vecy[iw_y, iw_x]*vecy[iw_y, iw_x])
         else:
-            vecx[i,j]=0.0;vecy[i,j]=0.0;vec[i,j]=0.0
+            vecx[iw_y, iw_x]=0.0;vecy[iw_y, iw_x]=0.0;vec[iw_y, iw_x]=0.0
         
 vecx,vecy,vec,i_disorder,i_cor_done=utils.fixer(vecx,vecy,vec,rij,r_limit,i_fix)
 
 
-X, Y = np.meshgrid(np.arange(0.5*iw, 0.5*iw*(jm+1), 0.5*iw), 
-                   np.arange(0.5*iw, 0.5*iw*(im+1), 0.5*iw))
+X, Y = np.meshgrid(np.arange(0.5*iw_size, 0.5*iw_size*(iw_no_x+1), 0.5*iw_size), 
+                   np.arange(0.5*iw_size, 0.5*iw_size*(iw_no_y+1), 0.5*iw_size))
 X*=l_scale
 Y*=l_scale
 
@@ -126,13 +128,13 @@ np.savez('results.npz', vecx=vecx, vecy=vecy, vec=vec, rij=rij)
 # plt.show()
 
 
-fig, ax = plt.subplots(figsize=(8,8*ia/ja))
+fig, ax = plt.subplots(figsize=(8,8*height/width))
 plt.contourf(X[0],np.transpose(Y)[0],rij,cmap='jet',levels=np.arange(rij.min(),min(rij.max()+0.1,1.0),0.01))
 plt.colorbar(label='R')
 # plt.savefig(f'/Users/venus/Erfan/sharifCourses/optic/piv/Report/figs/mixing/r_corr_jet_t{frame}_{iw}_{sw}.png', dpi=300)
 plt.show()
 
-fig, ax = plt.subplots(figsize=(8,8*ia/ja))
+fig, ax = plt.subplots(figsize=(8,8*height/width))
 plt.streamplot(X, Y, vecx, vecy,density=3,linewidth=0.8,color=vec)
 # plt.savefig(f'/Users/venus/Erfan/sharifCourses/optic/piv/Report/figs/mixing/velocity_jet_t{frame}_{iw}_{sw}.png', dpi=300)
 plt.show()
