@@ -54,51 +54,88 @@ sw_size = int( 2 * np.floor( (sw_size + 1) / 2 ) - 1 )
 # Calculating the Margin between iw and sw
 margin = int((sw_size - iw_size) / 2)
 # Number of iw and sw in each direction
-iw_no_y = int(2*np.floor((height-1-iw_size)/(iw_size-1)))
-iw_no_x = int(2*np.floor((width-1-iw_size)/(iw_size-1)))
+iw_no_y = int(2*np.floor((height - 1 - iw_size) / (iw_size - 1)))
+iw_no_x = int(2*np.floor((width - 1 - iw_size) / (iw_size - 1)))
 
+overlap = 0.5
+iw_no_x = int(width/(int(iw_size - iw_size * overlap)+1))+1
 # Initializing Displacement field
 # Displacement in x and y direction
-vecx = np.zeros((iw_no_y,iw_no_x)) # x-Displacement
-vecy = np.zeros((iw_no_y,iw_no_x)) # y-Displacement
-vec = np.zeros((iw_no_y,iw_no_x)) # Magnitude
-
+vecx = np.zeros((iw_no_y, iw_no_x)) # x-Displacement
+vecy = np.zeros((iw_no_y, iw_no_x)) # y-Displacement
+vec = np.zeros((iw_no_y, iw_no_x)) # Magnitude
+vec_x_ = []
+vec_x_total = []
+vec_y_ = []
+vec_y_total = []
+vec_ = []
+vec_total = []
 # Initializing the Correlation Matrix
-rij = np.zeros((iw_no_y,iw_no_x)) # Correlation coeff.
-
+rij = np.zeros((iw_no_y, iw_no_x)) # Correlation coeff.
+rij2 = []
+rj = []
+iw_right_bound = 0
+# while iw_right_bound
 for iw_x in tqdm(range(iw_no_x)):
-    j_d = int(iw_x * (iw_size - 1) / 2) # Bottom bound
-    j_u = j_d + iw_size          # Top bound
-    sw_d = max(0, j_d - margin) # First Row
-    sw_d_diff = max(0, j_d - margin) - (j_d - margin)
-    sw_u = min(width - 1, j_u + margin) # Last Row
+    iw_left_bound = int(iw_x * ((iw_size - 1) * (1-overlap)))
+    iw_right_bound = iw_left_bound + iw_size
+
+    sw_left_bound = max(0, iw_left_bound - margin)
+    sw_d_diff = max(0, iw_left_bound - margin) - (iw_left_bound - margin)
+    sw_right_bound = min(width - 1, iw_right_bound + margin)
 
     for iw_y in range(iw_no_y):
-        i_l = int(iw_y * (iw_size - 1) / 2) # Left bound
-        i_r = i_l + iw_size          # Right bound
-        sw_l = max(0, i_l - margin) # First column
-        sw_l_diff = max(0, i_l - margin) - (i_l - margin)
-        sw_r = min(height - 1, i_r + margin) # Last column
-        R = np.zeros((sw_size - iw_size + 1, sw_size - iw_size + 1)) - 1 # Correlation Matrix
-        c1 = img_1[..., i_l:i_l + iw_size, j_d:j_d + iw_size]# IW from 1st image
-        center_pixel_c1_in_image_1 = torch.Tensor([i_l + iw_size // 2, j_d + iw_size // 2])
-        R_torch = utils.torch_corr(c1, img_2[..., sw_l:sw_r, sw_d:sw_u])
+        iw_bottom_bound = int(iw_y * ((iw_size - 1) * (1-overlap)))
+        iw_top_bound = iw_bottom_bound + iw_size
+        
+        sw_bottom_bound = max(0, iw_bottom_bound - margin)
+        sw_l_diff = max(0, iw_bottom_bound - margin) - (iw_bottom_bound - margin)
+        sw_top_bound = min(height - 1, iw_top_bound + margin)
+        
+        # R = np.zeros((sw_size - iw_size + 1, sw_size - iw_size + 1)) - 1 # Correlation Matrix
+        c1 = img_1[..., iw_bottom_bound:iw_bottom_bound + iw_size, iw_left_bound:iw_left_bound + iw_size]# IW from 1st image
+        center_pixel_c1_in_image_1 = torch.Tensor([iw_bottom_bound + iw_size // 2, iw_left_bound + iw_size // 2])
+        R_torch = utils.torch_corr(c1, img_2[..., sw_bottom_bound:sw_top_bound, sw_left_bound:sw_right_bound])
+        R_max = R_torch.max()
+        rj.append(R_max)
         rij[iw_y, iw_x] = R_torch.max()
-        if rij[iw_y, iw_x] >= r_limit:
+        # if rij[iw_y, iw_x] >= r_limit:
+        if R_max >= r_limit: 
             # dum=np.floor(np.argmax(R)/R.shape[0])
             dum = np.unravel_index(np.argmax(R_torch), R_torch.shape)
-            center_of_max_R_in_image_2 = np.array([sw_l + dum[2], sw_d + dum[1]])
+            center_of_max_R_in_image_2 = np.array([sw_bottom_bound + dum[2], sw_left_bound + dum[1]])
             vecy[iw_y, iw_x] = center_of_max_R_in_image_2[1] - center_pixel_c1_in_image_1[1] + utils.subpix(R_torch[0], 'y', dum)
+            y_displacement = center_of_max_R_in_image_2[1] - center_pixel_c1_in_image_1[1] + utils.subpix(R_torch[0], 'y', dum)
+            vec_y_.append(y_displacement)
             vecx[iw_y, iw_x] = center_of_max_R_in_image_2[0] - center_pixel_c1_in_image_1[0] + utils.subpix(R_torch[0], 'x', dum)
+            x_displacement = center_of_max_R_in_image_2[0] - center_pixel_c1_in_image_1[0] + utils.subpix(R_torch[0], 'x', dum)
+            vec_x_.append(x_displacement)
             # vecy[i,j]=dum-(margin-sw_l_diff)+subpix(R,'y')
 
-            # vecx[i,j]=np.argmax(R)-dum*R.shape[0]-(margin-sw_d_diff)+subpix(R,'x')
+            # vecx[i,j]=np.argmax(R)-dum*R.shape[0]-(margin-sw_left_bound_diff)+subpix(R,'x')
+            total_displacement = (x_displacement**2 + y_displacement**2)**0.5
             vec[iw_y, iw_x] = np.sqrt(vecx[iw_y, iw_x] * vecx[iw_y, iw_x] + vecy[iw_y, iw_x] * vecy[iw_y, iw_x])
+            vec_.append(total_displacement)
+
         else:
             vecx[iw_y, iw_x]=0.0
+            vec_x_.append(0.0)
+            vec_y_.append(0.0)
+            vec_.append(0.0)
             vecy[iw_y, iw_x]=0.0
             vec[iw_y, iw_x]=0.0
-        
+    rij2.append(rj)
+    rj = []
+    vec_x_total.append(vec_x_)
+    vec_x_ = []
+    vec_y_total.append(vec_y_)
+    vec_y_ = []
+    vec_total.append(vec_)
+    vec_ = []
+rij = np.array(rij2).T
+vec = np.array(vec_total).T
+vec_x = np.array(vec_x_total).T
+vec_y = np.array(vec_y_total).T
 vecx, vecy, vec, i_disorder, i_cor_done = utils.fixer(vecx, vecy, vec, rij, r_limit, i_fix)
 
 X, Y = np.meshgrid(np.arange(0.5*iw_size, 0.5*iw_size*(iw_no_x+1), 0.5*iw_size), 

@@ -24,7 +24,7 @@ def fixer(vecx, vecy, vec, rij, r_limit, i_fix): # Fixing the irregular vectors 
         for i in range(1, vec.shape[0] - 1):
             neigh_x = np.array([])
             neigh_y = np.array([])
-            for ii in range( - 1, 2):
+            for ii in range( -1, 2):
                 for jj in range( -1, 2):
                     if ii == 0 and jj == 0: continue
                     neigh_x = np.append(neigh_x, vecx[i + ii, j + jj]) # Neighbourhood components
@@ -54,7 +54,7 @@ def fixer(vecx, vecy, vec, rij, r_limit, i_fix): # Fixing the irregular vectors 
                     
         if i_disorder == 0 or vec.mean() == 0.0: break # No need for correction
         correction_residual = vec_diff / (i_disorder * np.abs(vec.mean()))
-        if correction_residual < 1.0e - 20: break # Converged!
+        if correction_residual < 1.0e-20: break # Converged!
     if ii == i_fix - 1: print("Maximum correction iteration was reached!")
     return vecx, vecy, vec, i_disorder, ii
 
