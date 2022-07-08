@@ -6,8 +6,8 @@ pyTorch implemented Normalized Cross Correlation
 """
 
 import numpy as np
-import cv2
 from PIL import Image
+import cv2
 import matplotlib.pyplot as plt
 from tqdm import tqdm 
 import torch
@@ -24,29 +24,37 @@ image_transforms = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-# img_1 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/1.jpg', 0),0)).astype('float32') # Read Grayscale
 
+# Input images
 img_1 = Image.open('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/1.jpg')
 img_1 = image_transforms(img_1)
 
 img_2 = Image.open('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/2.jpg')
 img_2 = image_transforms(img_2)
 
-# Input images
+# img_1 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/1.jpg', 0),0)).astype('float32') # Read Grayscale
 # img_2 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/2.jpg', 0),0)).astype('float32')
+# Output Params
 frame = 2
 # img_1 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/a1.jpg', 0),0)).astype('float32') # Read Grayscale
 # img_2 = (np.flip(cv2.imread('/Users/venus/Erfan/sharifCourses/optic/piv/PIV/Example/a2.jpg', 0),0)).astype('float32') # Read Grayscalei_fix=500     # Number of maximum correction cycles
+
+# Algorithm Params
+# Maximum Fixing Iterations
 i_fix=500
-r_limit=0.5   # minimum acceptable correlation coefficient
-l_scale=1.0   # spatial scale [m/pixel]
-t_scale=1.0   # time step = 1/frame_rate [s/frame]
+# R correlation threshold
+r_limit=0.5
+# Spatial Scale [m/pixel]
+l_scale=1.0
+# Temporal Scale 1/frame_rate [s/frame]
+t_scale=1.0
+# Interrodation Windows Sizes (pixel)
+iw=51 
+# Search Windows Sizes (sw > iw) (pixel)
+sw=81 
 
-iw=51 # Interrodation Windows Sizes (pixel)
-sw=81 # Search Windows Sizes (sw > iw) (pixel)
-
-
-ia,ja = img_1.shape
+batch, ia, ja = img_1.shape
+# ia, ja = img_1.shape
 iw=int(2*np.floor((iw+1)/2)-1) # Even->Odd
 sw=int(2*np.floor((sw+1)/2)-1)
 margin=int((sw-iw)/2)
@@ -73,9 +81,10 @@ for j in tqdm(range(jm)):
         sw_r=min(ia-1,i_r+margin) # Last column
         
         R=np.zeros((sw-iw+1,sw-iw+1))-1 # Correlation Matrix
-        c1=np.array(img_1[i_l:i_l+iw,j_d:j_d+iw]) # IW from 1st image
-        center_pixel_c1_in_image_1=np.array([i_l+iw//2,j_d+iw//2])
-        R_torch = utils.torch_corr(c1, img_2[sw_l:sw_r,sw_d:sw_u])
+        # c1=np.array(img_1[i_l:i_l+iw,j_d:j_d+iw]) # IW from 1st image
+        c1=img_1[..., i_l:i_l+iw,j_d:j_d+iw]# IW from 1st image
+        center_pixel_c1_in_image_1=torch.Tensor([i_l+iw//2,j_d+iw//2])
+        R_torch = utils.torch_corr(c1, img_2[..., sw_l:sw_r,sw_d:sw_u])
         # for jj in range(sw_d,sw_u+1-iw):
         #     for ii in range(sw_l,sw_r+1-iw):
         #         c2=np.array(img_2[ii:ii+iw,jj:jj+iw]) # IW from 2nd image

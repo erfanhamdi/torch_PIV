@@ -12,13 +12,14 @@ def torch_corr(c1: np.array, sw: np.array) -> torch.Tensor:
     :return: normalized cross correlation
     
     """
-    c1 = torch.from_numpy(c1)
+    # c1 = torch.from_numpy(c1)
     # fixing the shape to have the batch dimension
-    c1 = c1.unsqueeze(0)
+    # c1 = c1.unsqueeze(0)
 
-    sw = torch.from_numpy(sw)
+    # sw = torch.from_numpy(sw)
     # fixing the shape to have the batch and channel dimension
-    sw = sw.unsqueeze(0).unsqueeze(0)
+    # sw = sw.unsqueeze(0).unsqueeze(0)
+    sw = sw.unsqueeze(0)
     
     # instantiate the NCC class with the interrogation window
     ncc = NCC(c1)
