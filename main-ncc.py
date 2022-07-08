@@ -8,33 +8,34 @@ pyTorch implemented Normalized Cross Correlation
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from tqdm import tqdm # pip install tqdm
+from tqdm import tqdm 
 import torch
-import torch.nn.functional as F
 from NCC import NCC
 import warnings
 warnings.filterwarnings("ignore")
-# from numba import jit # pip install numba
 
-# @jit(nopython=True)
-def corr2(c1,c2): # Cross-correlation
-    c1-=c1.mean()
-    c2-=c2.mean()
-    c12=(c1*c1).sum()*(c2*c2).sum()
-    if c12>0.0:
-        return (c1*c2).sum()/np.sqrt(c12)
-    return -1.0
-
-def torch_corr(c1, sw):
-
+def torch_corr(c1: np.array, sw: np.array) -> torch.Tensor:
+    """
+    Compute the normalized cross correlation between two images.
+    
+    :param c1: Interrogation window from the first image.
+    :param sw: search window from the second image.
+    :return: normalized cross correlation
+    
+    """
     c1 = torch.from_numpy(c1)
+    # fixing the shape to have the batch dimension
     c1 = c1.unsqueeze(0)
 
     sw = torch.from_numpy(sw)
+    # fixing the shape to have the batch and channel dimension
     sw = sw.unsqueeze(0).unsqueeze(0)
+    
+    # instantiate the NCC class with the interrogation window
     ncc = NCC(c1)
+    # compute the normalized cross correlation
     corr = ncc(sw)
-
+    
     return corr
 
 def fixer(vecx,vecy,vec,rij,r_limit,i_fix): # Fixing the irregular vectors (Normalized Median Test and low Correlation coeff.)
