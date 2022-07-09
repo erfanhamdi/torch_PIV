@@ -8,6 +8,7 @@ def torch_corr(c1: np.array,  sw: np.array) -> torch.Tensor:
     
     :param c1: Interrogation window from the first image.
     :param sw: search window from the second image.
+
     :return: normalized cross correlation
     
     """
@@ -18,7 +19,21 @@ def torch_corr(c1: np.array,  sw: np.array) -> torch.Tensor:
     corr = ncc(sw)    
     return corr
 
-def fixer(vecx, vecy, vec, rij, r_limit, i_fix): # Fixing the irregular vectors (Normalized Median Test and low Correlation coeff.)
+def fixer(vecx: np.array, vecy: np.array, vec: np.array, rij:np.array,
+         r_limit: float, i_fix: int) -> np.array:
+    """
+    Fixing the irregular vectors (Normalized Median Test and low Correlation coeff.)
+
+    :param vecx: array containing the x displacement.
+    :param vecy: array containing the y displacement.
+    :param vec: array containing the total displacement.
+    :param rij: array containing the correlation coefficient.
+    :param r_limit: limit for the correlation coefficient.
+    :param i_fix: Maximum number of iteration for fixing the irregularities.
+
+    :return: array containing the fixed vectors.
+
+    """
     fluc = np.zeros(vec.shape)
     for j in range(1, vec.shape[1] - 1):
         for i in range(1, vec.shape[0] - 1):
@@ -36,8 +51,6 @@ def fixer(vecx, vecy, vec, rij, r_limit, i_fix): # Fixing the irregular vectors 
             res_s_y = np.abs(vecy[i, j] - np.median(neigh_y)) / (np.median(np.abs(res_y)) + 0.1)
             
             fluc[i, j]=np.sqrt(res_s_x * res_s_x + res_s_y * res_s_y) # Normalized Fluctuations
-    # plt.contourf(fluc, levels=np.arange(2, 200, 0.1))#, vmin=0.0, vmax=2 # To see the outliers
-    # plt.colorbar(label='Normalized Fluctuation')
     
     i_disorder = 0
     for ii in range(i_fix): # Correction Cycle for patches of bad data
@@ -58,12 +71,20 @@ def fixer(vecx, vecy, vec, rij, r_limit, i_fix): # Fixing the irregular vectors 
     if ii == i_fix - 1: print("Maximum correction iteration was reached!")
     return vecx, vecy, vec, i_disorder, ii
 
-def subpix(R, axis,  dum): # Subpixle resolution (parabolic - Gaussian fit)
+def subpix(R: np.array, axis: str,  dum: np.array) -> float: 
+    """
+    Subpixle resolution (parabolic - Gaussian fit)
+
+    :param R: array containing the correlation coefficient.
+    :param axis: axis to be used for the subpixel resolution.
+    :param dum: dummy array containing the coordinates of the max_corr in the R.
+    
+    :return: float as the subpixel resolution.
+
+    """
     R_x = dum[1]
     R_y = dum[2]
-    # R_y=int(np.argmax(R) - dum * R.shape[0])  #vecx
     r = R[R_x, R_y]
-    # r2=R[R_x2, R_y2]
     if np.abs(r - 1.0) < 0.01: return 0.0
     try: # Out of bound at the edges:
         if axis == 'y': #For vecy
