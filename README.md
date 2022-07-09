@@ -9,6 +9,18 @@ The idea came to my mind when I was reading about  Particle Image Velocimetry al
 So it had to be initialized with the pixels defined.
 
 The other difference was the cross-correlation method that was implemented on the conv2D module in pyTorch. 
+## How To Run
+1. setup the required packages.
+```
+pip3 install -r requirements.txt
+```
+1. Add the address of the image frames to the config.yaml file.
+2. Setup the Algorithm parametrs.
+3. Run the main-ncc.py file.
+```
+python3 main-ncc.py
+```
+
 ## Validation 
 validation of the results of this algorithm was done with the openPIV software.
 
@@ -20,3 +32,6 @@ The table below shows the results of this algorithm on case B-5 low particle den
 The results of the Validation using OpenPIV software with the same Interrogation Window size and same pair of images:
 ![](figs/openpiv_test.png)
 
+## Based on:
+1. Roger Bermudez-Chacon for his implementation of Normalized Cross-Correlation in pyTorch [link](https://github.com/rogerberm/pytorch-ncc)
+2. J.Forughi PIV code [link](https://github.com/forughi/PIV)
