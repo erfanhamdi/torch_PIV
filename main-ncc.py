@@ -176,6 +176,6 @@ plt.savefig(f"{output_dir}/figs/correlation_field.png", dpi=300)
 
 fig, ax = plt.subplots(figsize=(10,8))
 plt.streamplot(X, Y, vecx, vecy, density = 3, linewidth = 0.8, color = vec)
-plt.savefig(f"{output_dir}/figs/streamline.png", dpi=300)
 plt.colorbar(label='velocity')
+plt.savefig(f"{output_dir}/figs/streamline.png", dpi=300)
 plt.show()
