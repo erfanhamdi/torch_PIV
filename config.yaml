@@ -1,0 +1,23 @@
+# Input Directory
+img_1_address: '/Users/venus/Erfan/torchPIV/figs/B005_1.tiff'
+img_2_address: '/Users/venus/Erfan/torchPIV/figs/B005_2.tiff'
+
+# Output Params
+figsize: (10, 8)
+output_dir: "results"
+
+# Algorithm Params:
+# Windowing Params
+iw_size: 32     # Interrogation Window Size
+sw_size: 32     # Search Window Size
+overlap: 0.5    # Overlap Percentage
+
+# Fixing The Outliers
+i_fix: 500      # No. of iterations to remove the outliers
+
+# Correlation Params
+r_limit: 0.5    # R correlation threshold
+
+# Scaling Factors
+t_scale: 1      # dt between each frame [s/frame]
+l_scale: 1      # Spatial Calibration Param [m/pixel]
